@@ -1,0 +1,16 @@
+syntax = "proto2";
+package protobuf;
+
+option java_package = "OrderHistory";
+option java_outer_classname = "PurchaseHistory";
+
+message OrdersData {
+    required string email = 1;
+    optional string invoicenumber = 2;
+    optional string model = 3;
+    optional string category = 4;
+    optional int32 amount = 5;
+    optional string purchasedate = 6;
+    optional string discountavailed = 7;
+ 
+}

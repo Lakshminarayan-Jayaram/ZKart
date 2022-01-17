@@ -1,0 +1,42 @@
+syntax = "proto2";
+package protobuf;
+
+option java_package = "DBBackup";
+option java_outer_classname = "DataBackup";
+
+message UsersData {
+    required string email = 1;
+    optional string epwd = 2;
+    optional string name = 3;
+    optional string mobile = 4;
+    optional int32 isadmin = 5;
+    optional string oldepwd = 6;
+
+   
+}
+
+message OrdersData {
+    required string email = 1;
+    optional string invoicenumber = 2;
+    optional string model = 3;
+    optional string category = 4;
+    optional int32 amount = 5;
+    optional string purchasedate = 6;
+    optional string discountavailed = 7;
+
+   
+}
+
+message DiscountData {
+	required string email = 1;
+	optional string discountcode = 2;
+	optional int32 discountavailedtimes = 3; 
+}
+message StocksData {
+	required string category = 1;
+	optional string brand = 2;
+	optional string model = 3;
+	optional int32 price = 4;
+	optional int32 stcocks = 5;
+	optional int32 discount = 6;
+}
