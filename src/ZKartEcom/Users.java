@@ -163,14 +163,14 @@ public class Users {
 		
 	}
 	public void getPasswordFromUser(String mail, Scanner sc) {
-		System.out.println("Enter Password :" );
+  		System.out.println("Enter Password :" );
 		String pwd = sc.next();
 		boolean pwdVerified = verifyPassword(mail, pwd);
 		if(pwdVerified) {
 			System.out.println("Login Successful");
 			//Shopping needs to be done;
 			getUserHM(mail);
-			//getDiscountForUser(mail);
+			getDiscountForUser(mail);
 			boolean isAdminUser =  users.get("IsAdmin").equals("1");
 			System.out.println("ADMIN " + isAdminUser);
 			if(isAdminUser && users.get("Encryptedpwd").equals("xyzzy")) {
@@ -594,13 +594,13 @@ ResultSetMetaData rsmd = rs.getMetaData();
 		return returnStmt;
 		
 	}
-	public String checkUserDiscount() {
+	public String checkUserDiscount(String mail) {
 		// TODO Auto-generated method stub
 		PreparedStatement ps;
 		String discount = null;
 		try {
 			ps = conn.prepareStatement("Select * from discount where Email=?");
-			ps.setString(1, users.get("Email"));
+			ps.setString(1, mail);
 			ResultSet rs = ps.executeQuery();
 			if(rs.next()) {
 				if(rs.getInt("DiscountAvailedTimes") < 3) {

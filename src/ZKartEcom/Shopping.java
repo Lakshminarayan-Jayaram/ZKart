@@ -1,5 +1,6 @@
 package ZKartEcom;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.sql.Connection;
@@ -48,11 +49,57 @@ public class Shopping {
 
 	private void tabletShopping() {
 		// TODO Auto-generated method stub
+		ResultSet rs = getDesiredProductResultSet("tablet");
+		//ResultSet backupRs = rs;
+		List<HashMap> mobileBrandList = new ArrayList<HashMap>();
+		
+		int index =0;
+		try {
+			while (rs.next()) {
+				HashMap <String, String> mobileBrands = new HashMap<String, String>();
+				ResultSetMetaData rsmd = rs.getMetaData();
+				System.out.print("model \t\t brand \t\t price\n");
+				System.out.println(rs.getString("Model") +"\t\t"+ rs.getString("Brand") +"\t\t"+ rs.getString("Price"));
+				for(int i = 1, l = rsmd.getColumnCount(); i < l; i++) {
+					mobileBrands.put(rsmd.getColumnLabel(i), rs.getString(i));
+					
+				}
+				mobileBrandList.add(mobileBrands);
+				index++;
+			}
+			chooseBrandAndModel(mobileBrandList);
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
 		
 	}
 
 	private void laptopShopping() {
 		// TODO Auto-generated method stub
+		ResultSet rs = getDesiredProductResultSet("laptop");
+		//ResultSet backupRs = rs;
+		List<HashMap> mobileBrandList = new ArrayList<HashMap>();
+		
+		int index =0;
+		try {
+			while (rs.next()) {
+				HashMap <String, String> mobileBrands = new HashMap<String, String>();
+				ResultSetMetaData rsmd = rs.getMetaData();
+				System.out.print("model \t\t brand \t\t price\n");
+				System.out.println(rs.getString("Model") +"\t\t"+ rs.getString("Brand") +"\t\t"+ rs.getString("Price"));
+				for(int i = 1, l = rsmd.getColumnCount(); i < l; i++) {
+					mobileBrands.put(rsmd.getColumnLabel(i), rs.getString(i));
+					
+				}
+				mobileBrandList.add(mobileBrands);
+				index++;
+			}
+			chooseBrandAndModel(mobileBrandList);
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
 		
 	}
 
@@ -179,12 +226,12 @@ public class Shopping {
 	private void printInvoice() {
 		
 		
-		String discountCode = new Users().checkUserDiscount();
+		String discountCode = new Users().checkUserDiscount(users.get("Email"));
 		
 		
 		Scanner sc = new Scanner (System.in);
 		
-		int discPer=0;
+		double discPer=0;
 		if(discountCode != null) {
 			
 			System.out.println("Discount code For you:" + discountCode);
@@ -192,7 +239,7 @@ public class Shopping {
 			String userEnteredDiscount = sc.next();
 			if(discountCode.equals(userEnteredDiscount)) {
 				discPer = getDiscountPercentage();
-				System.out.println("Discount Availed " +discPer);   
+				System.out.println("Discount Availed " +discPer+" Percent");   
 			}
 		}
 		updateOrderDetails(users.get("Email"), discPer);
@@ -200,14 +247,17 @@ public class Shopping {
 		
 	}
 
-	private void updateOrderDetails(String mail, int discPer) {
+	private void updateOrderDetails(String mail, double discPer) {
 		String invoiceNumber = generateInvoiceNumber();
 		double amount = 0;
+		
 		try {
 			for (int i =0 , l = finalCart.size(); i< l; i++) {
-				amount = Integer.valueOf(finalCart.get(i).get("Price").toString()); 
-				if(discPer>0) {
-					amount	*= (discPer/100);
+				amount = Double.parseDouble(finalCart.get(i).get("Price").toString()); 
+				
+				System.out.println(discPer);
+				if(discPer > 0) {
+					amount =amount - (amount * (discPer/100));
 				}
 					
 				PreparedStatement ps = conn.prepareStatement("INSERT INTO orders VALUES(?, ?, ?, ?, ?, ?, ?)");
@@ -219,7 +269,16 @@ public class Shopping {
 				ps.setString(6, java.time.LocalDate.now().toString());
 				ps.setString(7, discPer+"");
 				ps.executeUpdate();
+				
+				System.out.print("Model \t\t Brand \t\t Price\n");
+				System.out.println(finalCart.get(i).get("Model") +"\t\t"+ finalCart.get(i).get("Brand") +"\t\t"+ amount);
+				
+				
+				System.out.println("Order Placed SucccesFully.Thanks for shopping");
 				new Stocks().updateStocks(finalCart.get(i));
+				UpdateDiscountDetails();
+				new Users().giveUserOption();
+				
 			}
 			
 			
@@ -231,11 +290,33 @@ public class Shopping {
 		
 	}
 
+	private void UpdateDiscountDetails() {
+		// TODO Auto-generated method stub
+		int times=0;
+		try {
+		PreparedStatement ps = conn.prepareStatement("Select * from discount where Email=?");
+		ps.setString(1,users.get("Email"));
+		ResultSet rs = ps.executeQuery();
+		if(rs.next()) {
+			times = rs.getInt("DiscountAvailedTimes");
+			if(times < 3) {
+				times++;
+			}
+		}
+		ps = conn.prepareStatement("Update discount Set DiscountAvailedTimes=? where Email=?");
+		ps.setInt(1,times);
+		ps.setString(2,users.get("Email"));
+		ps.executeUpdate();
+		}catch(SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private int getDiscountPercentage() {
 		Random rn = new Random();
         
         int randomNumber = rn.nextInt(30);
-        while(randomNumber>=20 && randomNumber <=30 ) {
+        while(randomNumber<=20 || randomNumber >=30 ) {
         	randomNumber = rn.nextInt(30);
         }
        
@@ -276,34 +357,37 @@ public class Shopping {
 		return null;
 	}
 
-	public void getOrderHistory(HashMap<String, String> users) {
+	public void getOrderHistory(HashMap<String, String> users2) {
 		// TODO Auto-generated method stub
 		try {
-			users = users;
+			users = users2;
 			PreparedStatement ps = conn.prepareStatement("Select * from orders Where Email=?");
 			ps.setString(1, users.get("Email"));
 			ResultSet rs  = ps.executeQuery();
-			ResultSet backuprs = rs;
+			//ResultSet backuprs = rs;
 			while(rs.next()) {
 				System.out.println("InvoiceNumber "+ rs.getString("InvoiceNumber") );
 				System.out.println("Date "+ rs.getString("PurchaseDate"));
 				System.out.println("Category\tModel\tPrice");
 				System.out.println(rs.getString("Category")+"\t"+rs.getString("Model")+"\t"+rs.getString("Amount"));
-				  try{
-				       CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(() -> writeUsersOrdersData(backuprs));
-				        while (!completableFuture.isDone()) {
-				        	new Users().giveUserOption();
-				           
-					      } 
-				        String result = completableFuture.get();
-				         System.out.println(result);
-				        }
-				 
-				        catch(Exception e){
-				            e.printStackTrace();
-				        }
-				    }
-			
+
+				
+			}
+			  try{
+		       CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(() -> writeUsersOrdersData());
+		        while (!completableFuture.isDone()) {
+		        	new Users().giveUserOption();
+		           
+			      } 
+		        String result = completableFuture.get();
+		         System.out.println(result);
+		        }
+		 
+		        catch(Exception e){
+		            e.printStackTrace();
+		        }
+		    
+	
 		}catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -311,34 +395,46 @@ public class Shopping {
 		
 	}
 
-	private String writeUsersOrdersData(ResultSet rs) {
+	private String writeUsersOrdersData() {
 		// TODO Auto-generated method stub
 		String result = "";
-		String filename = users.get("Name")+"/orders.dat";
-		OrdersData.Builder ub = OrdersData.newBuilder();
 		try {
-			FileOutputStream fout =new FileOutputStream(filename);
-			while(rs.next()) {
-				try {
-					ub.setEmail(rs.getString("Email"));
-					ub.setAmount((int)Double.parseDouble(rs.getString("Amount")));
-					ub.setCategory(rs.getString("Category"));
-					ub.setDiscountavailed(rs.getString("DiscountAvailed"));
-					ub.setInvoicenumber(rs.getString("InvoiceNumber"));
-					ub.setModel(rs.getString("Model"));
-					ub.setPurchasedate(rs.getString("PurchaseDate"));
-					
-		 			
-					ub.build().writeTo(fout);
-					result = "Purchase History Persisted";
-				}catch (Exception e) {
-					//UsersData.getDefaultInstance().writeTo(cos);
-					e.printStackTrace();
-				}
+			PreparedStatement ps = conn.prepareStatement("Select * from orders Where Email=?");
+			ps.setString(1, users.get("Email"));
+			ResultSet rs  = ps.executeQuery();
+			
+			File theDir = new File( users.get("Name"));
+			if (!theDir.exists()){
+			    theDir.mkdirs();
 			}
-			
-		} catch (FileNotFoundException | SQLException e) {
-			
+			OrdersData.Builder ub = OrdersData.newBuilder();
+			try {
+				String filename = users.get("Name")+"/orders.dat";
+				FileOutputStream fout =new FileOutputStream(filename);
+				while(rs.next()) {
+					try {
+						ub.setEmail(rs.getString("Email"));
+						ub.setAmount((int)Double.parseDouble(rs.getString("Amount")));
+						ub.setCategory(rs.getString("Category"));
+						ub.setDiscountavailed(rs.getString("DiscountAvailed"));
+						ub.setInvoicenumber(rs.getString("InvoiceNumber"));
+						ub.setModel(rs.getString("Model"));
+						ub.setPurchasedate(rs.getString("PurchaseDate"));
+						
+			 			
+						ub.build().writeTo(fout);
+						result = "Purchase History Persisted";
+					}catch (Exception e) {
+						//UsersData.getDefaultInstance().writeTo(cos);
+						e.printStackTrace();
+					}
+				}
+				
+			} catch (FileNotFoundException | SQLException e) {
+				
+				e.printStackTrace();
+			}
+		}catch (SQLException e) {
 			e.printStackTrace();
 		}
 		
